@@ -1,0 +1,10 @@
+namespace TimeTracker.Api.Entities;
+
+public sealed class User
+{
+    public Guid Id { get; set; }
+    public string Email { get; set; } = default!;
+    public string? Name { get; set; }
+    public string? AvatarUrl { get; set; }
+    public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
+}
