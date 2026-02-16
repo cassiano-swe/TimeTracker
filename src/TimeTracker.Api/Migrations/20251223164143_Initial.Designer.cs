@@ -12,7 +12,7 @@ using TimeTracker.Api.Infrastructure.Persistence;
 namespace TimeTracker.Api.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20251222201535_Initial")]
+    [Migration("20251223164143_Initial")]
     partial class Initial
     {
         /// <inheritdoc />
