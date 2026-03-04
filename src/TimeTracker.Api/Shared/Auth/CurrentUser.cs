@@ -1,11 +1,10 @@
+using System.Security.Claims;
 using TimeTracker.Api.Shared.Errors;
 
 namespace TimeTracker.Api.Shared.Auth;
 
 public static class CurrentUser
 {
-    // MVP temporário: pega userId do header.
-    // Depois, substituímos por JWT/Claims sem mudar as features.
     public static IResult? TryGetUserId(HttpContext http, out Guid userId)
     {
         userId = default;
@@ -17,5 +16,15 @@ public static class CurrentUser
             return ApiErrors.Unauthorized("AUTH_INVALID", "Invalid X-User-Id header.");
 
         return null;
+    }
+
+    public static Guid GetUserId(ClaimsPrincipal principal)
+    {
+        var sub = principal.FindFirstValue(ClaimTypes.NameIdentifier) 
+               ?? principal.FindFirstValue("sub");
+
+        return Guid.TryParse(sub, out var id)
+            ? id
+            : throw new InvalidOperationException("Missing/invalid user id claim.");
     }
 }

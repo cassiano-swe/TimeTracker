@@ -2,6 +2,9 @@ using TimeTracker.Api.Entities;
 using TimeTracker.Api.Infrastructure.Persistence;
 using TimeTracker.Api.Shared.Errors;
 using FluentValidation;
+using TimeTracker.Api.Shared.Auth;
+using Microsoft.AspNetCore.Authorization;
+using System.Security.Claims;
 
 namespace TimeTracker.Api.UseCases.Workspaces;
 
@@ -23,16 +26,25 @@ public static class CreateWorkspace
     public static void Map(IEndpointRouteBuilder app)
     {
         app.MapPost("/api/v1/workspaces", Handle)
+            .RequireAuthorization()
           .WithName("CreateWorkspace")
           .WithTags("Workspaces");
     }
 
-    private static async Task<IResult> Handle(Request req, AppDbContext db, IValidator<Request> validator, CancellationToken ct)
+    [Authorize]
+    private static async Task<IResult> Handle(
+        Request req, 
+        AppDbContext db, 
+        IValidator<Request> validator, 
+        ClaimsPrincipal principal,
+        CancellationToken ct)
     {
         var validation = await validator.ValidateAsync(req, ct);
 
         if (!validation.IsValid)
             return ApiErrors.ValidationError(validation);
+
+        var userId = CurrentUser.GetUserId(principal);
 
         var ws = new Workspace
         {
@@ -42,6 +54,14 @@ public static class CreateWorkspace
         };
 
         db.Workspaces.Add(ws);
+
+          db.WorkspaceMembers.Add(new WorkspaceMember
+        {
+            WorkspaceId = ws.Id,
+            UserId = userId,
+            Role = "admin"
+        });
+        
         await db.SaveChangesAsync(ct);
 
         return Results.Created($"/api/v1/workspaces/{ws.Id}", new Response(ws.Id, ws.Name, ws.Plan));

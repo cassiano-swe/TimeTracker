@@ -1,6 +1,8 @@
 using Microsoft.EntityFrameworkCore;
 using TimeTracker.Api.Infrastructure.Persistence;
 using TimeTracker.Api.Shared.Auth;
+using Microsoft.AspNetCore.Authorization;
+using System.Security.Claims;
 
 namespace TimeTracker.Api.UseCases.Workspaces;
 
@@ -11,14 +13,15 @@ public static class ListWorkspaces
     public static void Map(IEndpointRouteBuilder app)
     {
         app.MapGet("/api/v1/workspaces", Handle)
+                   .RequireAuthorization()
            .WithName("ListWorkspaces")
            .WithTags("Workspaces");
     }
 
-    private static async Task<IResult> Handle(HttpContext http, AppDbContext db, CancellationToken ct)
+    [Authorize]
+    private static async Task<IResult> Handle(AppDbContext db, ClaimsPrincipal principal, CancellationToken ct)
     {
-        var authError = CurrentUser.TryGetUserId(http, out var userId);
-        if (authError is not null) return authError;
+        var userId = CurrentUser.GetUserId(principal);
 
             var data = await db.WorkspaceMembers
             .Where(m => m.UserId == userId)
@@ -26,7 +29,7 @@ public static class ListWorkspaces
                 m => m.WorkspaceId,
                 w => w.Id,
                 (m, w) => new { m, w })
-            .OrderByDescending(x => x.w.CreatedAt) // ou x.w.Id se não tiver CreatedAt
+            .OrderByDescending(x => x.w.CreatedAt) 
             .Select(x => new Response(x.w.Id, x.w.Name, x.w.Plan, x.m.Role))
             .ToListAsync(ct);
 

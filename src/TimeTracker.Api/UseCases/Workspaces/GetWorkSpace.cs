@@ -3,6 +3,8 @@ using Microsoft.EntityFrameworkCore;
 using TimeTracker.Api.Infrastructure.Persistence;
 using TimeTracker.Api.Shared.Auth;
 using TimeTracker.Api.Shared.Errors;
+using Microsoft.AspNetCore.Authorization;
+using System.Security.Claims;
 
 namespace TimeTracker.Api.UseCases.Workspaces;
 
@@ -25,24 +27,21 @@ public static class GetWorkspace
     public static void Map(IEndpointRouteBuilder app)
     {
         app.MapGet("/api/v1/workspaces/{workspaceId:guid}", Handle)
+                   .RequireAuthorization()
            .WithName("GetWorkspace")
            .WithTags("Workspaces");
     }
 
+    [Authorize]
     private static async Task<IResult> Handle(
         Guid workspaceId,
         HttpContext http,
         AppDbContext db,
         IValidator<Request> validator,
+        ClaimsPrincipal principal,
         CancellationToken ct)
     {
-        var authError = CurrentUser.TryGetUserId(http, out var userId);
-        if (authError is not null) return authError;
-
-        var req = new Request(workspaceId);
-        var validation = await validator.ValidateAsync(req, ct);
-        if (!validation.IsValid)
-            return ApiErrors.ValidationError(validation);
+        var userId = CurrentUser.GetUserId(principal);
 
         var data = await db.WorkspaceMembers
             .Where(m => m.WorkspaceId == workspaceId && m.UserId == userId)

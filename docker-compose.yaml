@@ -11,7 +11,7 @@ services:
     volumes:
       - time_pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U time -d time"]
+      test: ["CMD-SHELL", "pg_isready -U admin -d TimeTracker"]
       interval: 5s
       timeout: 5s
       retries: 10
@@ -39,6 +39,18 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: Development
       ConnectionStrings__Default: Host=db;Port=5432;Database=TimeTracker;Username=admin;Password=admin
+    
+     # JWT
+      Auth__Jwt__Issuer: TimeTracker
+      Auth__Jwt__Audience: TimeTracker
+      Auth__Jwt__Key: "${JWT_KEY}"
+      Auth__Jwt__ExpiresMinutes: "120"
+
+            # GitHub OAuth
+      GitHub__ClientId: "${GITHUB_CLIENT_ID}"
+      GitHub__ClientSecret: "${GITHUB_CLIENT_SECRET}"
+      GitHub__CallbackPath: "/api/v1/auth/github/callback"
+      
     ports:
       - "8080:8080"
     restart: unless-stopped
