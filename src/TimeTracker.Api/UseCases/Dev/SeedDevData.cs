@@ -1,6 +1,6 @@
 using TimeTracker.Api.Entities;
-using TimeTracker.Api.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
+using TimeTracker.Api.Infrastructure.Persistence;
 
 namespace TimeTracker.Api.UseCases.Dev;
 
@@ -8,6 +8,7 @@ public static class SeedDevData
 {
     public sealed record Response(
         Guid UserId,
+        string Email,
         List<WorkspaceInfo> Workspaces);
 
     public sealed record WorkspaceInfo(
@@ -25,6 +26,20 @@ public static class SeedDevData
     private static async Task<IResult> Handle(AppDbContext db, CancellationToken ct)
     {
         var userId = Guid.Parse("11111111-1111-1111-1111-111111111111");
+        const string email = "admin@timetracker.dev";
+
+        var user = await db.Users.FirstOrDefaultAsync(x => x.Id == userId, ct);
+        if (user is null)
+        {
+            user = new User
+            {
+                Id = userId,
+                Email = email,
+                Name = "TimeTracker Admin"
+            };
+
+            db.Users.Add(user);
+        }
 
         var ws1Id = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
         var ws2Id = Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb");
@@ -83,10 +98,12 @@ public static class SeedDevData
 
         return Results.Ok(new Response(
             userId,
-            [
+            email,
+            new List<WorkspaceInfo>
+            {
                 new(ws1Id, ws1.Name, "admin"),
                 new(ws2Id, ws2.Name, "member")
-            ]
+            }
         ));
     }
 }

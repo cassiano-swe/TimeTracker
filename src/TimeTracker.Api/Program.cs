@@ -43,14 +43,17 @@ builder.Services
 builder.Services.AddAuthorization();
 
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(c =>
+{
+    c.CustomSchemaIds(type => type.FullName!.Replace("+", "."));
+});
 
 var app = builder.Build();
 
-if (app.Environment.IsDevelopment())
-{
-    await app.ApplyMigrationsAsync();
-}
+// if (app.Environment.IsDevelopment())
+// {
+await app.ApplyMigrationsAsync();
+// }
 
 app.UseSwagger();
 app.UseSwaggerUI();
