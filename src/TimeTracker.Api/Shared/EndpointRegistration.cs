@@ -23,6 +23,9 @@ public static class EndpointRegistration
 
         // Invites
         CreateInvite.Map(app);
+        ListInvites.Map(app);
+        RevokeInvite.Map(app);
+        GetInviteByToken.Map(app);
 
         if (app.Environment.IsDevelopment())
         {
