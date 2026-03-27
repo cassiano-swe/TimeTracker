@@ -9,6 +9,9 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
     public DbSet<Workspace> Workspaces => Set<Workspace>();
     public DbSet<WorkspaceMember> WorkspaceMembers => Set<WorkspaceMember>();
     public DbSet<WorkspaceInvite> WorkspaceInvites => Set<WorkspaceInvite>();
+    public DbSet<GitHubIntegration> GitHubIntegrations => Set<GitHubIntegration>();
+    public DbSet<GitHubRepository> GitHubRepositories => Set<GitHubRepository>();
+
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
