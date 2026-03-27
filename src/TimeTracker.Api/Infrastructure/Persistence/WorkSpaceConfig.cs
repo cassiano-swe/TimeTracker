@@ -2,7 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using TimeTracker.Api.Entities;
 
-namespace Fido.Time.Api.Infrastructure.Persistence.Configurations;
+namespace TimeTracker.Api.Infrastructure.Persistence.Configurations;
 
 public sealed class WorkspaceConfig : IEntityTypeConfiguration<Workspace>
 {
