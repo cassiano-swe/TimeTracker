@@ -1,4 +1,6 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Mvc;
+using TimeTracker.Api.Shared.Email;
 using TimeTracker.Api.Entities;
 using TimeTracker.Api.Infrastructure.Persistence;
 using TimeTracker.Api.Shared.Errors;
@@ -52,6 +54,9 @@ public static class CreateInvite
         HttpContext http,
         AppDbContext db,
         IValidator<Request> validator,
+        [FromServices]IEmailService emailService,
+        //TODO: REFATORAR
+        [FromServices] IConfiguration config,
         CancellationToken ct)
     {
         var authError = CurrentUser.TryGetUserId(http, out var userId);
@@ -64,20 +69,25 @@ public static class CreateInvite
         var normalizedRole = request.Role.Trim().ToLowerInvariant();
         var normalizedEmail = request.Email.Trim().ToLowerInvariant();
 
-        // 1) verificar se o usuário atual é admin do workspace
-        var membership = await db.WorkspaceMembers
-            .Where(x => x.WorkspaceId == workspaceId && x.UserId == userId)
-            .Select(x => new { x.Role })
-            .FirstOrDefaultAsync(ct);
+        var workspaceAccess = await db.WorkspaceMembers
+    .Where(x => x.WorkspaceId == workspaceId && x.UserId == userId)
+    .Join(
+        db.Workspaces,
+        m => m.WorkspaceId,
+        w => w.Id,
+        (m, w) => new
+        {
+            m.Role,
+            WorkspaceName = w.Name
+        })
+    .FirstOrDefaultAsync(ct);
 
-        if (membership is null)
+        if (workspaceAccess is null)
             return ApiErrors.NotFound("WORKSPACE_NOT_FOUND", "Workspace not found or not accessible.");
 
-        if (membership.Role != "admin")
+        if (workspaceAccess.Role != "admin")
             return ApiErrors.Forbidden("INSUFFICIENT_PERMISSIONS", "Only admins can invite members.");
 
-        // 2) verificar se já existe alguém membro com esse email
-        // por enquanto depende da tabela users existir
         var isAlreadyMember = await db.WorkspaceMembers
             .Where(m => m.WorkspaceId == workspaceId)
             .Join(db.Users,
@@ -89,7 +99,6 @@ public static class CreateInvite
         if (isAlreadyMember)
             return ApiErrors.Conflict("MEMBER_ALREADY_EXISTS", "This email is already a member of the workspace.");
 
-        // 3) evitar convite pendente duplicado para o mesmo email/workspace
         var existingPendingInvite = await db.WorkspaceInvites
             .Where(x => x.WorkspaceId == workspaceId
                      && x.Email.ToLower() == normalizedEmail
@@ -100,7 +109,6 @@ public static class CreateInvite
         if (existingPendingInvite is not null)
             return ApiErrors.Conflict("INVITE_ALREADY_EXISTS", "There is already a pending invite for this email.");
 
-        // 4) criar convite
         var invite = new WorkspaceInvite
         {
             Id = Guid.NewGuid(),
@@ -115,6 +123,19 @@ public static class CreateInvite
 
         db.WorkspaceInvites.Add(invite);
         await db.SaveChangesAsync(ct);
+
+        //TODO: REFATORAR
+        var frontendBaseUrl = config["App:FrontendBaseUrl"]?.TrimEnd('/')
+                     ?? "http://localhost:5173";
+
+        var inviteLink = $"{frontendBaseUrl}/invite/{invite.Token}";
+
+        await emailService.SendWorkspaceInviteAsync(
+            invite.Email,
+            workspaceAccess.WorkspaceName,
+            invite.Role,
+            inviteLink,
+            ct);
 
         return Results.Created(
             $"/api/v1/workspaces/{workspaceId}/invites/{invite.Id}",
