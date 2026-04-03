@@ -1,6 +1,7 @@
 using TimeTracker.Api.Infrastructure.Persistence;
 using TimeTracker.Api.Shared;
 using TimeTracker.Api.Shared.Email;
+using TimeTracker.Api.Shared.GitHub;
 using FluentValidation;
 using Microsoft.EntityFrameworkCore;
 using System.Text;
@@ -22,6 +23,8 @@ builder.Services.AddHttpClient("github", client =>
 });
 
 builder.Services.AddScoped<IEmailService, ConsoleEmailService>();
+builder.Services.AddScoped<GitHubAppJwtFactory>();
+builder.Services.AddScoped<GitHubAppClient>();
 
 var jwt = builder.Configuration.GetSection("Auth:Jwt");
 var keyBytes = Encoding.UTF8.GetBytes(jwt["Key"]!);

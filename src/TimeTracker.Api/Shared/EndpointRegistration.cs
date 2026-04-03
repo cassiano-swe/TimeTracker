@@ -3,6 +3,7 @@ using TimeTracker.Api.UseCases.Workspaces;
 using TimeTracker.Api.UseCases.Members;
 using TimeTracker.Api.UseCases.Auth;
 using TimeTracker.Api.Features.Invites;
+using TimeTracker.Api.Features.GitHub;
 
 namespace TimeTracker.Api.Shared;
 
@@ -26,6 +27,10 @@ public static class EndpointRegistration
         ListInvites.Map(app);
         RevokeInvite.Map(app);
         GetInviteByToken.Map(app);
+
+        // GitHub
+        BeginInstallation.Map(app);
+        CompleteInstallationSetup.Map(app);
 
         if (app.Environment.IsDevelopment())
         {

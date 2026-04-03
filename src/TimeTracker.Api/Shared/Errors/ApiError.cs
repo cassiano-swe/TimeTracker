@@ -33,4 +33,7 @@ public static class ApiErrors
 
     public static IResult Conflict(string code, string message, object? details = null)
         => Results.Conflict(new { code, message, details });
+
+    public static IResult BadRequest(string code, string message, object? details = null)
+        => Results.BadRequest(new { code, message, details });
 }
