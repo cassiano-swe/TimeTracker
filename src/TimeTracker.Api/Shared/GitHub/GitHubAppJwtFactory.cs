@@ -1,6 +1,5 @@
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
 using System.Security.Cryptography;
 
 namespace TimeTracker.Api.Shared.GitHub;
@@ -24,23 +23,24 @@ public sealed class GitHubAppJwtFactory(IConfiguration config, IWebHostEnvironme
 
         var pem = File.ReadAllText(privateKeyPath);
 
-        using var rsa = RSA.Create();
+        var rsa = RSA.Create();
         rsa.ImportFromPem(pem);
 
+        var securityKey = new RsaSecurityKey(rsa)
+        {
+            KeyId = appId
+        };
+
         var credentials = new SigningCredentials(
-            new RsaSecurityKey(rsa),
+            securityKey,
             SecurityAlgorithms.RsaSha256);
 
         var now = DateTimeOffset.UtcNow;
 
         var token = new JwtSecurityToken(
             issuer: appId,
-            claims: new[]
-            {
-                new Claim(JwtRegisteredClaimNames.Iat, now.ToUnixTimeSeconds().ToString(), ClaimValueTypes.Integer64),
-                new Claim(JwtRegisteredClaimNames.Exp, now.AddMinutes(9).ToUnixTimeSeconds().ToString(), ClaimValueTypes.Integer64),
-                new Claim(JwtRegisteredClaimNames.Iss, appId)
-            },
+            notBefore: now.AddSeconds(-30).UtcDateTime,
+            expires: now.AddMinutes(9).UtcDateTime,
             signingCredentials: credentials);
 
         return new JwtSecurityTokenHandler().WriteToken(token);

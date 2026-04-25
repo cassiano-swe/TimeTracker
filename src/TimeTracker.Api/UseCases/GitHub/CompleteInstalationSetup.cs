@@ -12,6 +12,8 @@ public static class CompleteInstallationSetup
         Guid IntegrationId,
         Guid WorkspaceId,
         long InstallationId,
+        string AccountLogin,
+        string AccountType,
         string Status,
         int RepositoryCount);
 
@@ -34,6 +36,8 @@ public static class CompleteInstallationSetup
             return ApiErrors.BadRequest("WORKSPACE_CONTEXT_MISSING", "Workspace context was not found.");
         }
 
+        var installationDetails = await gitHubClient.GetInstallationAsync(installation_id, ct);
+
         var installationToken = await gitHubClient.CreateInstallationTokenAsync(installation_id, ct);
         var repositoriesResponse = await gitHubClient.GetInstallationRepositoriesAsync(installationToken, ct);
 
@@ -47,8 +51,8 @@ public static class CompleteInstallationSetup
                 Id = Guid.NewGuid(),
                 WorkspaceId = workspaceId,
                 InstallationId = installation_id,
-                AccountLogin = "unknown",
-                AccountType = "unknown",
+                AccountLogin = installationDetails.Account.Login,
+                AccountType = installationDetails.Account.Type,
                 Status = "active",
                 CreatedAt = DateTimeOffset.UtcNow
             };
@@ -58,6 +62,8 @@ public static class CompleteInstallationSetup
         else
         {
             existingIntegration.InstallationId = installation_id;
+            existingIntegration.AccountLogin = installationDetails.Account.Login;
+            existingIntegration.AccountType = installationDetails.Account.Type;
             existingIntegration.Status = "active";
         }
 
@@ -92,6 +98,8 @@ public static class CompleteInstallationSetup
             existingIntegration.Id,
             workspaceId,
             installation_id,
+            existingIntegration.AccountLogin,
+            existingIntegration.AccountType,
             existingIntegration.Status,
             repositoriesResponse.Repositories.Count));
     }

@@ -46,13 +46,24 @@ services:
       Auth__Jwt__Key: "${JWT_KEY}"
       Auth__Jwt__ExpiresMinutes: "120"
 
-            # GitHub OAuth
+      # GitHub OAuth
       GitHub__ClientId: "${GITHUB_CLIENT_ID}"
       GitHub__ClientSecret: "${GITHUB_CLIENT_SECRET}"
       GitHub__CallbackPath: "/api/v1/auth/github/callback"
+
+      # GitHubApp
+      GitHubApp__PrivateKeyPath: "${GITHUBAPP__PRIVATEKEYPATH}"
+      GitHubApp__AppId: "${GITHUBAPP__APPID}"
+      GitHubApp__ClientId: "${GITHUBAPP__CLIENTID}"
+      GitHubApp__ClientSecret: "${GITHUBAPP__CLIENTSECRET}"
+      GitHubApp__WebhookSecret: "${GITHUBAPP__WEBHOOKSECRET}"
+      GitHubApp__BaseUrl: "${GITHUBAPP__BASEURL}"
+      GitHubApp__AppSlug: "${GITHUBAPP__APPSLUG}"
       
     ports:
       - "8080:8080"
+    volumes:
+    - ./src/TimeTracker.Api/secrets:/run/secrets/github:ro
     restart: unless-stopped
 
 volumes:
